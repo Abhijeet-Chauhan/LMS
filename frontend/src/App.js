@@ -37,7 +37,7 @@ function App() {
     setIsLoading(true);
     setMessages(prev => [...prev, { sender: 'system', text: `Uploading ${file.name}...` }]);
     try {
-      const response = await axios.post(' https://51c3df8a9b4b.ngrok-free.app/ingest', formData, { headers: { 'Content-Type': 'multipart/form-data' } });
+      const response = await axios.post('http://localhost:8000/ingest', formData, { headers: { 'Content-Type': 'multipart/form-data' } });
       setMessages(prev => [...prev, { sender: 'system', text: response.data.message }]);
     } catch (error) {
       setMessages(prev => [...prev, { sender: 'system', text: 'Error uploading file.' }]);
@@ -55,7 +55,7 @@ function App() {
     setIsLoading(true);
     setPrompt('');
     try {
-      const response = await axios.post(' https://51c3df8a9b4b.ngrok-free.app/ask', {
+      const response = await axios.post('http://localhost:8000/ask', {
         question: prompt,
         history: newMessages.slice(0, -1).map(msg => ({ role: msg.sender === 'user' ? 'user' : 'assistant', content: msg.text }))
       });
