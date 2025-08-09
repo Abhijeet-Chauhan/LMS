@@ -1,39 +1,40 @@
-import React, { useEffect, useId, useRef, useState } from "react";
+import React, { useEffect, useId, useRef, useState, useCallback } from "react";
 import { motion } from "framer-motion";
 import clsx from "clsx";
 
 export function AnimatedGridPattern({
-  width = 40,
-  height = 40,
+  width = 60, // Defaulting to the larger size
+  height = 60,
   x = -1,
   y = -1,
   strokeDasharray = 0,
-  numSquares = 50,
+  numSquares = 30,
   className,
-  maxOpacity = 0.5,
-  duration = 4,
-  repeatDelay = 0.5,
+  maxOpacity = 0.1,
+  duration = 3,
+  repeatDelay = 1,
   ...props
 }) {
   const id = useId();
   const containerRef = useRef(null);
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
 
-  const getPos = () => [
+  // --- FIX: Memoize functions with useCallback ---
+  const getPos = useCallback(() => [
     Math.floor((Math.random() * dimensions.width) / width),
     Math.floor((Math.random() * dimensions.height) / height),
-  ];
+  ], [dimensions.width, dimensions.height, width, height]);
 
-  const generateSquares = (count) => {
+  const generateSquares = useCallback((count) => {
     return Array.from({ length: count }, (_, i) => ({
       id: i,
       pos: getPos(),
     }));
-  };
-
+  }, [getPos]);
+  
   const [squares, setSquares] = useState(() => generateSquares(numSquares));
 
-  const updateSquarePosition = (id) => {
+  const updateSquarePosition = useCallback((id) => {
     setSquares((currentSquares) =>
       currentSquares.map((sq) =>
         sq.id === id
@@ -41,15 +42,18 @@ export function AnimatedGridPattern({
           : sq,
       ),
     );
-  };
+  }, [getPos]);
 
+  // --- FIX: Add generateSquares to the dependency array ---
   useEffect(() => {
     if (dimensions.width && dimensions.height) {
       setSquares(generateSquares(numSquares));
     }
-  }, [dimensions, numSquares]);
+  }, [dimensions, numSquares, generateSquares]);
 
   useEffect(() => {
+    // --- FIX: Capture ref value in a variable for cleanup ---
+    const currentRef = containerRef.current;
     const resizeObserver = new ResizeObserver((entries) => {
       for (let entry of entries) {
         setDimensions({
@@ -59,16 +63,16 @@ export function AnimatedGridPattern({
       }
     });
 
-    if (containerRef.current) {
-      resizeObserver.observe(containerRef.current);
+    if (currentRef) {
+      resizeObserver.observe(currentRef);
     }
 
     return () => {
-      if (containerRef.current) {
-        resizeObserver.unobserve(containerRef.current);
+      if (currentRef) {
+        resizeObserver.unobserve(currentRef);
       }
     };
-  }, [containerRef]);
+  }, []); // containerRef is stable and doesn't need to be in the array
 
   return (
     <svg
